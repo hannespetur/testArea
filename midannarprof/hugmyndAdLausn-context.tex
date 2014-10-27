@@ -1,0 +1,422 @@
+\subsection*{Dæmi 1}
+Finnið þau lið sem unnu leiki sína með a.m.k. þriggja marka mun.
+
+\lausn
+\begin{lstlisting}
+SELECT homeID AS winnerID
+FROM Matches
+WHERE homeGoals-awayGoals>=3
+	UNION
+SELECT awayID AS winnerID
+FROM Matches
+WHERE awayGoals-homeGoals>=3;
+\end{lstlisting}
+gefur
+\begin{Verbatim}[frame=single]
+winnerID
+----------
+BRA
+COL
+CRO
+ESP
+FRA
+GER
+NED
+SUI
+\end{Verbatim}
+
+\subsection*{Dæmi 2}
+Finnið þau lið sem skoruðu mark að loknum venjulegum leiktíma (sem er 90 mínútur).
+
+\lausn
+\begin{lstlisting}
+SELECT DISTINCT teamID
+FROM Goals
+WHERE minute>90;
+\end{lstlisting}
+gefur
+\begin{Verbatim}[frame=single]
+teamId
+----------
+BRA
+CHI
+COL
+SUI
+GER
+ARG
+POR
+NED
+JPN
+GRE
+NGA
+ALG
+BEL
+USA
+\end{Verbatim}
+
+\subsection*{Dæmi 3}
+Finnið nöfnin á þeim löndum með bil í nafninu sínu (t.d. 'Suður Kórea').
+
+\lausn
+\begin{lstlisting}
+SELECT name
+FROM Teams
+WHERE name LIKE '% %';
+\end{lstlisting}
+gefur
+\begin{Verbatim}[frame=single]
+name
+----------------------
+Costa Rica
+Ivory Coast
+Bosnia and Herzegovina
+Korea Republic
+\end{Verbatim}
+
+\subsection*{Dæmi 4}
+Finnið nöfnin á þeim liðum sem kepptu í riðli A (Group A).
+
+\lausn
+\begin{lstlisting}
+SELECT name
+FROM Teams
+WHERE groupID=(
+	SELECT id
+	FROM Groups
+	WHERE name='A'
+);
+\end{lstlisting}
+gefur
+\begin{Verbatim}[frame=single]
+name
+----------
+Brazil
+Croatia
+Cameroon
+Mexico
+\end{Verbatim}
+
+\subsection*{Dæmi 5}
+Finnið þá leikmenn og nafn á liði þeirra sem skoruðu mark fyrir lið sem lék í riðli B.
+
+\lausn
+\begin{lstlisting}
+SELECT DISTINCT name,player
+FROM Teams,Goals
+WHERE teamID=code AND groupID=(
+	SELECT id
+	FROM Groups
+	WHERE name='B'
+);
+\end{lstlisting}
+gefur
+\begin{Verbatim}[frame=single]
+name        player
+----------  ----------
+Australia   Cahill
+Australia   Jedinak
+Chile       Alexis
+Chile       Beausejour
+Chile       Ch. ArAngu
+Chile       Valdivia
+Chile       Vargas
+Spain       Alonso
+Spain       David Vill
+Spain       Mata
+Spain       Torres
+Netherland  Blind
+Netherland  De Vrij
+Netherland  Fer
+Netherland  Huntelaar
+Netherland  Memphis
+Netherland  Robben
+Netherland  Sneijder
+Netherland  V. Persie
+Netherland  Wijnaldum
+\end{Verbatim}
+
+\subsection*{Dæmi 6}
+Finnið þau lið skoruðu jafnmörg mörk sem heimalið í ólíkum leikjum.
+
+\lausn
+\begin{lstlisting}
+SELECT DISTINCT M1.homeID,M2.homeID
+FROM Matches AS M1, Matches AS M2 ON M1.homeGoals=M2.homeGoals
+WHERE M1.id<>M2.id AND M1.homeID<>M2.homeID;
+\end{lstlisting}
+gefur
+\begin{Verbatim}[frame=single]
+homeId      homeId
+----------  ------
+BRA         CHI
+BRA         COL
+BRA         FRA
+BRA         BIH
+MEX         ESP
+MEX         URU
+MEX         ENG
+MEX         GHA
+MEX         RUS
+MEX         HON
+MEX         ARG
+MEX         NGA
+MEX         BEL
+... (mjög langt, líklega er ég að misskilja þessa spurningu)
+\end{Verbatim}
+
+\subsection*{Dæmi 7}
+Finnið þá leikmenn sem skoruðu tvö eða fleiri mörk í einum leik og þá leiki þar sem þetta gerðist.
+
+\lausn
+\begin{lstlisting}
+SELECT player,matchID
+FROM Goals
+GROUP BY matchID,player
+HAVING count(*)>=2;
+\end{lstlisting}
+gefur
+\begin{Verbatim}[frame=single]
+player      matchId
+----------  ----------
+Neymar Jr   1
+Robben      3
+V. Persie   3
+Benzema     10
+Muller      13
+MandZukiC   18
+L. Suarez   23
+E. Valenci  26
+Neymar Jr   33
+Jackson M.  37
+Shaqiri     41
+Messi       43
+Musa        43
+James       50
+Djabou      54
+Ozil        54
+Kroos       61
+Schurrle    61
+\end{Verbatim}
+
+\subsection*{Dæmi 8}
+Finnið leikmann, lið og mínútu fyrir hvert mark sem var skorað í leik milli Sviss og Frakklands ('SUI' og 'FRA').
+
+\lausn
+\begin{lstlisting}
+SELECT player,teamID,minute
+FROM Goals
+WHERE matchid=(
+	SELECT id
+	FROM Matches
+	WHERE (homeID='SUI' AND awayID='FRA') OR (homeID='FRA' AND awayID='SUI')
+);
+\end{lstlisting}
+gefur
+\begin{Verbatim}[frame=single]
+player      teamId      minute
+----------  ----------  ----------
+Dzemaili    SUI         81
+Xhaka       SUI         87
+Giroud      FRA         17
+Matuidi     FRA         18
+Valbuena    FRA         40
+Benzema     FRA         67
+Sissoko     FRA         73
+\end{Verbatim}
+
+\subsection*{Dæmi 9}
+Finnið markamínútuna, þ.e. þá mínútu þar sem flest mörk voru skoruð.
+
+\lausn
+\begin{lstlisting}
+SELECT minute
+FROM Goals
+GROUP BY minute
+HAVING count(*)=(
+	SELECT max(goalsScored)
+	FROM (
+		SELECT count(*) AS goalsScored
+		FROM Goals
+		GROUP BY minute
+	)
+);
+\end{lstlisting}
+gefur
+\begin{Verbatim}[frame=single]
+minute
+----------
+82
+\end{Verbatim}
+
+\subsection*{Dæmi 10}
+Finnið markahæsta leikmanninn í þýska landsliðinu ('GER') og hve mörg mörk hann skoraði.
+
+\lausn
+\begin{lstlisting}
+SELECT player,count(*)
+FROM Goals
+WHERE teamID='GER'
+GROUP BY player
+HAVING count(*)=(
+	SELECT max(goalsScored)
+	FROM (
+		SELECT count(*) AS goalsScored
+		FROM Goals
+		WHERE teamID='GER'
+		GROUP BY player
+	)
+);
+\end{lstlisting}
+gefur
+\begin{Verbatim}[frame=single]
+player      count(*)
+----------  ----------
+Muller      5
+\end{Verbatim}
+
+\subsection*{Dæmi 11}
+Finnið markahæsta leikmann í hverju liði og hve mörg mörk hann skoraði.
+
+\lausn
+\begin{lstlisting}
+SELECT player,teamID,max(goalsScored)
+FROM (
+	SELECT teamID,player,count(*) AS goalsScored
+	FROM Goals
+	GROUP BY teamID,player
+	)
+GROUP BY teamID;
+\end{lstlisting}
+gefur
+\begin{Verbatim}[frame=single]
+player      teamID      max(goalsScored)
+----------  ----------  ----------------
+Djabou      ALG         3
+Messi       ARG         4
+Cahill      AUS         2
+De Bruyne   BEL         1
+Dzeko       BIH         1
+Neymar Jr   BRA         4
+Alexis      CHI         2
+B. Wilfrie  CIV         2
+Matip       CMR         1
+James       COL         6
+Ruiz B.     CRC         2
+MandZukiC   CRO         2
+E. Valenci  ECU         3
+Rooney      ENG         1
+Alonso      ESP         1
+Benzema     FRA         3
+Muller      GER         5
+A. Ayew     GHA         2
+Samaras     GRE         1
+Costly      HON         1
+Reza        IRN         1
+Balotelli   ITA         1
+Honda       JPN         1
+H M Son     KOR         1
+A Guardado  MEX         1
+V. Persie   NED         4
+Musa        NGA         2
+Nani        POR         1
+Kerzhakov   RUS         1
+Shaqiri     SUI         3
+L. Suarez   URU         2
+Dempsey     USA         2
+\end{Verbatim}
+ATH: Þessi lausn gefur aðeins einn af markahæstum leikmönnunum, ég sá ekki fyrir mér einfalda leið til að birta alla markahæstu leikmenn liðs þegar þeir voru tveir eða fleiri.
+
+\subsection*{Dæmi 12}
+Finnið það lið sem vann flesta leiki.
+
+\lausn
+\begin{lstlisting}
+CREATE TEMP VIEW winnerTable AS
+SELECT homeID AS Winner,count(*) AS Wins,1 AS atHome
+FROM Matches
+WHERE homeGoals>awayGoals
+GROUP BY Winner
+	UNION
+SELECT awayID AS Winner,count(*) AS Wins,0 AS atHome
+FROM Matches
+WHERE awayGoals>homeGoals
+GROUP BY Winner;
+
+SELECT Winner,sum(Wins) AS totalWins
+FROM winnerTable
+GROUP BY Winner
+HAVING totalWins=(
+	SELECT max(totalWins)
+	FROM (
+		SELECT Winner,sum(Wins) AS totalWins
+		FROM winnerTable
+		GROUP BY Winner
+	)
+);
+\end{lstlisting}
+gefur
+\begin{Verbatim}[frame=single]
+Winner      totalWins
+----------  ----------
+GER         6
+\end{Verbatim}
+Önnur lausn sem notar ekki \texttt{CREATE VIEW} (því við lærðum það aldrei):
+\begin{lstlisting}
+SELECT Winner,sum(Wins) AS totalWins
+FROM (
+	SELECT homeID AS Winner,count(*) AS Wins,1 AS atHome
+	FROM Matches
+	WHERE homeGoals>awayGoals
+	GROUP BY Winner
+		UNION
+	SELECT awayID AS Winner,count(*) AS Wins,0 AS atHome
+	FROM Matches
+	WHERE awayGoals>homeGoals
+	GROUP BY Winner
+)
+GROUP BY Winner
+HAVING totalWins=(
+	SELECT max(totalWins)
+	FROM (
+		SELECT Winner,sum(Wins) AS totalWins
+		FROM (
+			SELECT homeID AS Winner,count(*) AS Wins,1 AS atHome
+			FROM Matches
+			WHERE homeGoals>awayGoals
+			GROUP BY Winner
+				UNION
+			SELECT awayID AS Winner,count(*) AS Wins,0 AS atHome
+			FROM Matches
+			WHERE awayGoals>homeGoals
+			GROUP BY Winner
+			)
+		GROUP BY Winner
+	)
+);
+\end{lstlisting}
+
+\subsection*{Dæmi 13}
+Finnið þá leiki þar sem sjálfsmark var skorað.
+
+\lausn
+\begin{lstlisting}
+SELECT id
+FROM Matches, (
+	SELECT matchID,teamID,count(*) AS goals
+	FROM Goals
+	GROUP BY matchID,teamID
+) ON Matches.id=matchID AND homeID=teamID
+WHERE homeGoals<>goals;
+\end{lstlisting}
+gefur
+\begin{Verbatim}[frame=single]
+id
+----------
+1
+10
+11
+46
+53
+54
+\end{Verbatim}
+ATH: Hér geri ég ráð fyrir því að ef sjálfsmark var skorað þá voru mörk liðs ekki jöfn markaskorurum þess liðs í þeim leik. Þetta þýðir samt að t.d. ef bæði lið skora eitt sjálfmark hvort þá myndi það ekki koma fram í þessu svari.
